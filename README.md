@@ -7,6 +7,7 @@
 > Move to directory contain "Client.jar" file
 >
 > Input this command line in terminal to run client program:
-    java -cp Client.jar client.ClientMain
+
+	java -cp Client.jar client.ClientMain
 >
 
