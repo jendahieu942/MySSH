@@ -1,4 +1,6 @@
-# MySSH
-This is small program use TCP/IP by socket programming<
+# MySSH - Distributed System Project
 ## How to start
+
+> Block la gi khong biet
+
 
