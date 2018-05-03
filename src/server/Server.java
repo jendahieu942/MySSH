@@ -252,10 +252,16 @@ public class Server {
             List<String> subdir = getSubdir();
             if (command_arr.length == 1) {
                 result = "rm: missing operand\n";
-            } else {
-                if (command_arr.length == 2) {
+            } else if(command_arr.length == 2){
+                if (command_arr[1].startsWith("-")) {
                     result = "rm: missing operand\n";
-                } else if (command_arr[1].startsWith("-") && command_arr.length == 3) {
+                } else {
+                    if (subdir.contains(command_arr[1])) {
+                        result = "Handling in a few second later\n";
+                    }
+                }
+            } else { 
+                if (command_arr[1].startsWith("-")) {
                     if (command_arr[1].equals("-d")) {
                         if (subdir.contains(command_arr[2])) {
                             if ((new File(currentDir + "/" + command_arr[2]).isDirectory())) {
@@ -264,12 +270,12 @@ public class Server {
                                 List<String> subdir1 = getSubdir();
                                 currentDir = realcurrentDir;
                                 if (subdir1.size() == 0) {
-                                    cmd[2] = "cd " + currentDir + "; rm -d" + command_arr[2];
+                                    cmd[2] = "cd " + currentDir + "; rm -d " + command_arr[2];
                                     try {
                                         process = runtime.exec(cmd);
                                         int exitvalue = process.waitFor();
                                         if (exitvalue == 0) {
-                                            result = "\n";
+                                            result = "";
                                         } else {
                                             result = "rm: Can not remove this directory.\n";
                                         }
@@ -291,12 +297,12 @@ public class Server {
                         }
                     } else if (command_arr[1].equals("-r") || command_arr[1].equals("-R")) {
                         if (subdir.contains(command_arr[2])) {
-                            cmd[2] = "cd " + currentDir + "; rm " + command_arr[1] + command_arr[2];
+                            cmd[2] = "cd " + currentDir + "; rm " + command_arr[1]+ " " + command_arr[2];
                             try {
                                 process = runtime.exec(cmd);
                                 int exitvalue = process.waitFor();
                                 if (exitvalue == 0) {
-                                    result = "\n";
+                                    result = "";
                                 } else {
                                     result = "rm: Can not remove " + "\'" + command_arr[2] + "\'\n";
                                 }
@@ -309,8 +315,8 @@ public class Server {
                             result = "rm: " + command_arr[2] + ": Is not directory or file.\n";
                         }
                     }
-                } else if (subdir.contains(command_arr[1])) {
-
+                } else {
+                    result = "rm: Error syntax \n";
                 }
             }
             return result;
