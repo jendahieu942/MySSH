@@ -4,8 +4,8 @@
 
 *   **Start Server (on Linux)**
 
-	There are 2 different ways to start server:
-	1.  With Terminal
+There are 2 different ways to start server:
+1.  With Terminal
 
 >	Open Terminal
 
@@ -18,7 +18,7 @@
 >	Here you have into IP address where server will run on
 
 		
-	2.  
+2. Run on IDE as Eclipse or NetBeans  
     
 *   **Run Client**
 
