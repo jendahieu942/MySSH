@@ -2,7 +2,7 @@
 **Server should be run on Linux OS or Like-Unix OS** 
 ## How to start
 
-*   **Start Server (on Linux)**
+***Start Server (on Linux)**
 
 There are 2 different ways to start server:
 
@@ -24,6 +24,6 @@ There are 2 different ways to start server:
 		
 2.  
     
-*   **Run Client**
+***Run Client**
 
 
