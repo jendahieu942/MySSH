@@ -5,20 +5,24 @@
 *   **Start Server (on Linux)**
 
 There are 2 different ways to start server:
-1.  With Terminal
 
->	Open Terminal
+    1.  With Terminal
 
->	Change to the directory which contain "server.jar" file
+    >	Open Terminal
 
->	Run following command line to start server:
-	
-	java -cp server.jar server.Server
+    >	Change to the directory which contain "server.jar" file
 
->	Here you have into IP address where server will run on
+    >	Run following command line to start server:
+        
+        java -cp server.jar server.Server
 
-		
-2. Run on IDE as Eclipse or NetBeans  
+    >	Here you have into IP address where server will run on
+
+    2.  With IDE as Eclipse or NetBeans
+
+    >   Open project server.jar
+
+    >   
     
 *   **Run Client**
 
