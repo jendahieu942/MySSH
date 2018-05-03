@@ -2,19 +2,24 @@
 **Server should be run on Linux OS or Like-Unix OS** 
 ## How to start
 
-*   **Start Server**
- 
-2 CLIENT SIDE
-	> Open Terminal
-	>
-	> Move to directory contain "Client.jar" file
-	>
-	> Input this command line in terminal to run client program:
-	
-		java -cp Client.jar client.ClientMain
-	
- 	>
-*   WINDOW
+*   **Start Server (on Linux)**
 
+	There are 2 different ways to start server:
+	1.  With Terminal
+
+>	Open Terminal
+
+>	Change to the directory which contain "server.jar" file
+
+>	Run following command line to start server:
+	
+	java -cp server.jar server.Server
+
+>	Here you have into IP address where server will run on
+
+		
+	2.  
+    
+*   **Run Client**
 
 
