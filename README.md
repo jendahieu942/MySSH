@@ -1,4 +1,4 @@
 # MySSH
-	<p>This is small program use TCP/IP by socket programming</p> 
+This is small program use TCP/IP by socket programming<
 ## How to start
 
