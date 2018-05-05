@@ -69,6 +69,15 @@ public class Server {
 		}
 	}
 
+    public void stop(){
+        try {
+            System.out.println("Closing server . . . \n");
+            this.server.close();
+            System.out.println("Server closed!\n");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    }
 	private /**
 			 * ClientHandler
 			 */
@@ -414,13 +423,39 @@ public class Server {
 				List<String> subdir = getSubdir();
 				if (command_arr[1].equals(".")) {
 					result = "";
-				} else if (command_arr[1].equals("..")) {
-					if (currentDir.equals(homedir)) {
-						result = "Permission denied! Can't move to this directory.\n";
-					} else {
-						String[] dirpath = currentDir.split("/");
-						currentDir = String.join("/", Arrays.copyOf(dirpath, dirpath.length - 1));
-					}
+				} else if (command_arr[1].startsWith("..")) {
+                    if(command_arr[1].equals("..")){
+                        if (currentDir.equals(homedir)) {
+                            result = "Permission denied! Can't move to this directory.\n";
+                        } else {
+                            String[] dirpath = currentDir.split("/");
+                            currentDir = String.join("/", Arrays.copyOf(dirpath, dirpath.length - 1));
+                        }
+                    } else {
+                        String[] dirpath = command_arr[1].split("/");
+                        String[] newdirpath = currentDir.split("/");
+
+                        String realcurrentDir = currentDir;
+                        String newcurrentDir = String.join("/", Arrays.copyOf(newdirpath, newdirpath.length - 1));
+                        currentDir = newcurrentDir;
+                        List<String> subdirList = getSubdir();
+                        currentDir = realcurrentDir;
+                        result = newcurrentDir + "\n";
+
+                        if(dirpath.length == 2){
+                            if(subdirList.contains(dirpath[1])){
+                                if (!(new File(newcurrentDir + "/" + dirpath[1]).isDirectory())){
+                                    result += "cd: That's not directory\n";
+                                } else {
+                                    currentDir = newcurrentDir + "/" + dirpath[1];
+                                }
+                            } else {
+                                result += "cd: Not found directory\n";
+                            }
+                        } else {
+                            result += "Please, you should move directory step by step\n";
+                        }
+                    }
 				} else if (subdir.contains(command_arr[1])) {
 					if (!(new File(currentDir + "/" + command_arr[1]).isDirectory())) {
 						result = "error: " + command_arr[1] + ": Not a directory\n";
