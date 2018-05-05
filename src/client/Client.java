@@ -55,7 +55,8 @@ public class Client {
                     System.out.print("~ $ ");
                     while(true) {
                         command = sc.nextLine();
-                        command = String.join("###", command.split(" (?=([^\"]*\"[^\"]*\")*[^\"]*$)"));
+                        command = String.join("###", command.split("( )+(?=([^\"]*\"[^\"]*\")*[^\"]*$)"));
+                        System.out.println(command);
                         dos.writeUTF(command);
                         if(command.equals("exit")) {
                         	System.out.println("Exit!");
