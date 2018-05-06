@@ -170,9 +170,11 @@ public class Server {
 								break;
 							} else {
 								// Receive command from client here:
+								// Encryptophic if need here
 								replyString = commandHandler(command);
 
 								// Response command request:
+								// Cryptophic here to sent
 								dos.writeUTF(replyString);
 							}
 						} catch (IOException e) {
@@ -216,6 +218,10 @@ public class Server {
 				result = rm_command(command_arr);
 			} else if (command_arr[0].equals("mkdir")) {
 				result = mkdir_command(command_arr);
+			} else if (command_arr[0].equals("echo")){
+				result = echo_command(command_arr);
+			} else if (command_arr[0].endsWith("nano")) {
+				result = nano_command(command_arr);
 			} else if (command_arr[0].isEmpty() || command.isEmpty()) {
 				result = "";
 			} else {
@@ -226,8 +232,85 @@ public class Server {
 			return result;
 		}
 
+		private String nano_command(String[] command_arr) {
+			String result = "";
+			if(getSubdir().contains(command_arr[1])){
+				String filepath = currentDir + "/" + command_arr[1];
+				cmd[2] = "less "+filepath+" >/dev/tty";
+				try {
+					process = runtime.exec(cmd);
+					process.waitFor();
+					bReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+					String line = "";
+					while ((line = bReader.readLine()) != null) {
+						result += line + "\n";
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			} else {
+				result += "nano: File not found\n";
+			}
+			return result;
+		}
+
+		private String echo_command(String[] command_arr) {
+			String result = "";
+			if(command_arr.length == 2){
+				result = command_arr[1];
+			} else if(command_arr.length == 4){
+				cmd[2] = "cd " + currentDir + "; echo " + command_arr[1] + " " + command_arr[2] + " " + command_arr[3];
+				try {
+					process = runtime.exec(cmd);
+					int exitvalue = process.waitFor();
+					if(exitvalue != 0) {
+						bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+						String line = "";
+						while ((line = bReader.readLine())!= null) {
+							result += line + "\n";
+						}
+					}			
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+			}
+			return result;
+		}
+
 		private String mkdir_command(String[] command_arr) {
-			return null;
+			String result = "";
+			if(command_arr.length == 1){
+				result = "mkdir: The directory's name could not be empty\n";
+			} else {
+				List<String> subdir = getSubdir();
+				if(subdir.contains(command_arr[1])){
+					result = "mkdir: Directory named " + command_arr[1] +" already exist!\n";
+				} else {
+					cmd[2] = "cd " + currentDir + "; mkdir " + command_arr[1];
+					try {
+						process = runtime.exec(cmd);
+						if(process.waitFor() != 0 ){
+							result = "";
+						} else {
+							bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+							String line = "";
+							while((line = bReader.readLine()) != null){
+								result += line +"\n";
+							}
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			return result;
 		}
 
 		private String date_command(String[] command_arr) {
@@ -290,7 +373,11 @@ public class Server {
 							if (exitvalue == 0) {
 								result = "";
 							} else {
-								result = "rm: Can not remove " + "\'" + command_arr[1] + "\'\n";
+								bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+								String line = "";
+								while ((line = bReader.readLine()) != null) {
+									result += line + "\n";
+								}
 							}
 						} catch (IOException e) {
 							e.printStackTrace();
@@ -435,13 +522,14 @@ public class Server {
                         String[] dirpath = command_arr[1].split("/");
                         String[] newdirpath = currentDir.split("/");
 
+						// initial
                         String realcurrentDir = currentDir;
                         String newcurrentDir = String.join("/", Arrays.copyOf(newdirpath, newdirpath.length - 1));
                         currentDir = newcurrentDir;
                         List<String> subdirList = getSubdir();
                         currentDir = realcurrentDir;
-                        result = newcurrentDir + "\n";
 
+						// do check
                         if(dirpath.length == 2){
                             if(subdirList.contains(dirpath[1])){
                                 if (!(new File(newcurrentDir + "/" + dirpath[1]).isDirectory())){
