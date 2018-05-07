@@ -4,16 +4,24 @@ import java.io.Console;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.Scanner;
+
+import encrypt.Encipher;
 
 public class Client {
 	private static DataInputStream dis;
 	private static DataOutputStream dos;
 	private static Socket socket;
+	private static final String prime ="359334085968622831041960188598043661065388726959079837";
+	private static final String primitive = "7";
+	private Encipher encipher;
+	private String key;
 
 	public Client(String ipAdress, int port) {
 		try {
@@ -24,55 +32,59 @@ public class Client {
 			// Obtaining input and out stream
 			Client.dis = new DataInputStream(socket.getInputStream());
 			Client.dos = new DataOutputStream(socket.getOutputStream());
-
-			// Now main program
-			Scanner sc = new Scanner(System.in);
-			Boolean flagSignIn = false;
-			String command = "";
-			char[] pass = null;
-			Console console = null;
-			// Login
-			do {
-				sc.reset();
-				System.out.print(dis.readUTF());
-				String usrname;
-				dos.writeUTF((usrname = sc.nextLine()));
-
-				System.out.print(dis.readUTF());
-				console = System.console();
-				pass = console.readPassword();
-				String pwd = Arrays.toString(pass);
-				pwd = pwd.substring(1, pwd.length() - 1);
-				pwd = pwd.replace(", ", "");
-				dos.writeUTF(pwd);
-				flagSignIn = (Boolean) dis.readBoolean();
-				if(usrname.equals("admin") && flagSignIn == false){
-					System.out.print("Only one admin can using server at same time\n");
-				}
-			} while (!flagSignIn);
-
-			// Login success
-			if (flagSignIn) {
-				Boolean flagConnect = dis.readBoolean();
-				if (flagConnect) {
-					System.out.println("Signed in!");
-					System.out.print("~ $ ");
-					while (true) {
-						command = sc.nextLine();
-						command = String.join("###", command.split("( )+(?=([^\"]*\"[^\"]*\")*[^\"]*$)"));
-						dos.writeUTF(command);
-						if (command.equals("exit")) {
-							System.out.println("Exit!");
-							socket.close();
-							break;
-						} else {
-							System.out.print(dis.readUTF());
-						}
+			
+			if(exchangeKey()){
+				encipher = new Encipher(this.key);
+				// Now main program
+				Scanner sc = new Scanner(System.in);
+				Boolean flagSignIn = false;
+				String command = "";
+				char[] pass = null;
+				Console console = null;
+				// Login
+				do {
+					sc.reset();
+					String usrname;
+					System.out.print(encipher.decrypted(dis.readUTF()));
+					dos.writeUTF(encipher.encrypted((usrname = sc.nextLine())));
+	
+					System.out.print(encipher.decrypted(dis.readUTF()));
+					console = System.console();
+					pass = console.readPassword();
+					String pwd = Arrays.toString(pass);
+					pwd = pwd.substring(1, pwd.length() - 1);
+					pwd = pwd.replace(", ", "");
+					dos.writeUTF(encipher.encrypted(pwd));
+					flagSignIn = (Boolean) dis.readBoolean();
+					if(usrname.equals("admin") && flagSignIn == false){
+						System.out.print("Only one admin can using server at same time\n");
 					}
-				} else {
-					System.out.println("Server is overloaded! Try again later!");
+				} while (!flagSignIn);
+	
+				// Login success
+				if (flagSignIn) {
+					Boolean flagConnect = dis.readBoolean();
+					if (flagConnect) {
+						System.out.println("Signed in!");
+						System.out.print("~ $ ");
+						while (true) {
+							command = sc.nextLine();
+							command = String.join("###", command.split("( )+(?=([^\"]*\"[^\"]*\")*[^\"]*$)"));
+							dos.writeUTF(encipher.encrypted(command));
+							if (command.equals("exit")) {
+								System.out.println("Exit!");
+								socket.close();
+								break;
+							} else {
+								String plaintext = encipher.decrypted(dis.readUTF());
+								System.out.print(plaintext);
+							}
+						}
+					} else {
+						System.out.println("Server is overloaded! Try again later!");
+					}
+					sc.close();
 				}
-				sc.close();
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -96,6 +108,22 @@ public class Client {
 			}
 		}
 	}
+	
+	public boolean exchangeKey(){
+		try{
+			BigInteger p = new BigInteger(prime);
+			BigInteger alpha = new BigInteger(primitive);
+			int a = new Random().nextInt(1000);
+			dos.writeUTF(alpha.pow(a).mod(p).toString());
+			BigInteger b = new BigInteger(dis.readUTF());
+			this.key = b.pow(a).mod(p).toString();
+			return true;
+		}catch (Exception e){
+			System.out.println("Error: Exchange key");
+			return false;
+		}
+	}
+	
 
 	@SuppressWarnings("resource")
 	public static void main(String[] args) {
