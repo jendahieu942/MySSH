@@ -35,7 +35,8 @@ public class Client {
 			do {
 				sc.reset();
 				System.out.print(dis.readUTF());
-				dos.writeUTF(sc.nextLine());
+				String usrname;
+				dos.writeUTF((usrname = sc.nextLine()));
 
 				System.out.print(dis.readUTF());
 				console = System.console();
@@ -45,6 +46,9 @@ public class Client {
 				pwd = pwd.replace(", ", "");
 				dos.writeUTF(pwd);
 				flagSignIn = (Boolean) dis.readBoolean();
+				if(usrname.equals("admin") && flagSignIn == false){
+					System.out.print("Only one admin can using server at same time\n");
+				}
 			} while (!flagSignIn);
 
 			// Login success

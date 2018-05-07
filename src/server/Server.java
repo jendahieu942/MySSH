@@ -17,14 +17,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-import com.mysql.cj.api.xdevapi.ColumnDefinition.StaticColumnDefinition;
-
 public class Server {
 	final int MAX_CLIENTS = 5;
 	final int PORT = 6969;
 	static int CURRENT_CLIENTS = 0;
 	static int COUNT_CLIENTS_WANNA_CONNECT = 0;
 	static int COUNT_CLIENTS_CONNECTED = 0;
+	static int ADMIN_STATUS = 0;
 
 	private ServerSocket server;
 
@@ -121,11 +120,18 @@ public class Server {
 					String userPass = dis.readUTF();
 
 					if (userName != null && !userName.isEmpty() && ac.userLogin(userName, userPass)) {
-						dos.writeBoolean(true);
-						flagSignIN = true;
 						if (userName.equals("admin")) {
-							role = 1;
+							if(ADMIN_STATUS==0){
+								role = 1;
+								dos.writeBoolean(true);
+								flagSignIN = true;
+							} else {
+								dos.writeBoolean(false);
+								flagSignIN = false;
+							}
 						} else {
+							dos.writeBoolean(true);
+							flagSignIN = true;
 							role = 0;
 						}
 					} else {
