@@ -105,7 +105,7 @@ public class Client {
 		}
 	}
 	
-	public boolean exchangeKey(){
+	private boolean exchangeKey(){
 		try{
 			BigInteger p = new BigInteger(prime);
 			BigInteger alpha = new BigInteger(primitive);

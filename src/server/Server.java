@@ -177,7 +177,7 @@ public class Server {
 					// Connect Success
 					System.out.println("_______________________________________________");
 					System.out.println("New client has connected is: " + socket);
-					System.out.println("Key: " + this.key);
+//					System.out.println("Key: " + this.key);
 					System.out.println("Number of client connecting is: " + CURRENT_CLIENTS);
 
 					// Init for request handler
@@ -228,7 +228,7 @@ public class Server {
 			}
 		}
 		
-		public boolean exchangeKey(){
+		private boolean exchangeKey(){
 			try{
 				BigInteger p = new BigInteger(prime);
 				BigInteger alpha = new BigInteger(primitive);
