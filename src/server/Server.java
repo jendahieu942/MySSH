@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -15,9 +16,12 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 
 import com.mysql.cj.api.xdevapi.ColumnDefinition.StaticColumnDefinition;
+
+import encrypt.Encipher;
 
 public class Server {
 	final int MAX_CLIENTS = 5;
@@ -101,11 +105,18 @@ public class Server {
 		private String namepoint = "~ $ ";
 		private BufferedReader bReader;
 		private int role;
+		private static final String prime ="359334085968622831041960188598043661065388726959079837";
+		private static final String primitive = "7";
+		private String key;
+		private Encipher encipher;
 
 		public ClientHandler(Socket socket, DataInputStream dis, DataOutputStream dos) {
 			this.socket = socket;
 			this.dis = dis;
 			this.dos = dos;
+			if(exchangeKey()){
+				this.encipher = new Encipher(this.key);
+			}
 		}
 
 		public void run() {
@@ -115,10 +126,10 @@ public class Server {
 				Account ac = new Account("root", "12345");
 				try {
 					// Get username and password from client
-					this.dos.writeUTF("You need login to access into server\nUser name: ");
-					String userName = dis.readUTF();
-					dos.writeUTF("Password: ");
-					String userPass = dis.readUTF();
+					this.dos.writeUTF(encipher.encrypted("You need login to access into server\nUser name: "));
+					String userName = encipher.decrypted(dis.readUTF());
+					dos.writeUTF(encipher.encrypted("Password: "));
+					String userPass = encipher.decrypted(dis.readUTF());
 
 					if (userName != null && !userName.isEmpty() && ac.userLogin(userName, userPass)) {
 						dos.writeBoolean(true);
@@ -166,6 +177,7 @@ public class Server {
 					// Connect Success
 					System.out.println("_______________________________________________");
 					System.out.println("New client has connected is: " + socket);
+					System.out.println("Key: " + this.key);
 					System.out.println("Number of client connecting is: " + CURRENT_CLIENTS);
 
 					// Init for request handler
@@ -174,7 +186,7 @@ public class Server {
 					while (true) {
 						// Now command handler from client
 						try {
-							command = dis.readUTF();
+							command = encipher.decrypted(dis.readUTF());
 							if (command.equals("exit")) {
 								System.out.println("Disconneted to client");
 								System.out.println("Client: " + socket);
@@ -189,7 +201,7 @@ public class Server {
 
 								// Response command request:
 								// Cryptophic here to sent
-								dos.writeUTF(replyString);
+								dos.writeUTF(encipher.encrypted(replyString));
 							}
 						} catch (IOException e) {
 							System.out.println("Disconneted to client");
@@ -213,6 +225,21 @@ public class Server {
 						e.printStackTrace();
 					}
 				}
+			}
+		}
+		
+		public boolean exchangeKey(){
+			try{
+				BigInteger p = new BigInteger(prime);
+				BigInteger alpha = new BigInteger(primitive);
+				int a = new Random().nextInt(1000);
+				dos.writeUTF(alpha.pow(a).mod(p).toString());
+				BigInteger b = new BigInteger(dis.readUTF());
+				this.key = b.pow(a).mod(p).toString();
+				return true;
+			}catch (Exception e){
+				System.out.println("Error: Exchange key");
+				return false;
 			}
 		}
 
