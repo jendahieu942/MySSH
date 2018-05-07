@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
@@ -14,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+
+import com.mysql.cj.api.xdevapi.ColumnDefinition.StaticColumnDefinition;
 
 public class Server {
 	final int MAX_CLIENTS = 5;
@@ -69,10 +73,10 @@ public class Server {
 		}
 	}
 
-    public void stop(){
+    public void stopServer(){
         try {
             System.out.println("Closing server . . . \n");
-            this.server.close();
+			server.close();
             System.out.println("Server closed!\n");
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -93,6 +97,7 @@ public class Server {
 		private Process process;
 		private String namepoint = "~ $ ";
 		private BufferedReader bReader;
+		private int role;
 
 		public ClientHandler(Socket socket, DataInputStream dis, DataOutputStream dos) {
 			this.socket = socket;
@@ -115,6 +120,11 @@ public class Server {
 					if (userName != null && !userName.isEmpty() && ac.userLogin(userName, userPass)) {
 						dos.writeBoolean(true);
 						flagSignIN = true;
+						if (userName.equals("admin")) {
+							role = 1;
+						} else {
+							role = 0;
+						}
 					} else {
 						dos.writeBoolean(false);
 						flagSignIN = false;
@@ -220,8 +230,10 @@ public class Server {
 				result = mkdir_command(command_arr);
 			} else if (command_arr[0].equals("echo")){
 				result = echo_command(command_arr);
-			} else if (command_arr[0].endsWith("nano")) {
+			} else if (command_arr[0].equals("nano")) {
 				result = nano_command(command_arr);
+			} else if (command_arr[0].equals("stop")) {
+				result = stop_command(command_arr);
 			} else if (command_arr[0].isEmpty() || command.isEmpty()) {
 				result = "";
 			} else {
@@ -232,22 +244,44 @@ public class Server {
 			return result;
 		}
 
+		private String stop_command(String[] command_arr) {
+			String result = "";
+			if(role  == 1){
+				extracted();
+				try {
+					if(server.isClosed()){
+						this.socket.close();
+						result = "Server closed!\n";
+						System.exit(0);
+					} else {
+						result = "Server still running!\n";
+					}
+				} catch (IOException e) {
+					System.out.println("Exit program by admin, you need start manually!\n");
+				}
+			} else {
+				result = "Permision denied!\n";
+			}
+			return result;
+		}
+
+		private void extracted() {
+			stopServer();
+		}
+
 		private String nano_command(String[] command_arr) {
 			String result = "";
 			if(getSubdir().contains(command_arr[1])){
 				String filepath = currentDir + "/" + command_arr[1];
-				cmd[2] = "less "+filepath+" >/dev/tty";
 				try {
-					process = runtime.exec(cmd);
-					process.waitFor();
-					bReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+					bReader = new BufferedReader(new FileReader(filepath));
 					String line = "";
-					while ((line = bReader.readLine()) != null) {
-						result += line + "\n";
+					while((line = bReader.readLine())!= null){
+						result += line +"\n";
 					}
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
 				} catch (IOException e) {
-					e.printStackTrace();
-				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			} else {
@@ -278,6 +312,8 @@ public class Server {
 					e.printStackTrace();
 				}
 				
+			} else {
+				result = "echo: Error syntax\n";
 			}
 			return result;
 		}
