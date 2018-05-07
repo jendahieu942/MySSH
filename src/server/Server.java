@@ -27,7 +27,7 @@ public class Server {
 	static int CURRENT_CLIENTS = 0;
 	static int COUNT_CLIENTS_WANNA_CONNECT = 0;
 	static int COUNT_CLIENTS_CONNECTED = 0;
-	static int ADMIN_STATUS = 0;
+	static List<String> CLIENT_CONNECTING = new ArrayList<String>();
 
 	private ServerSocket server;
 
@@ -95,7 +95,7 @@ public class Server {
 		final DataInputStream dis;
 		final DataOutputStream dos;
 		final Socket socket;
-		final String homedir = "/home/jenda";
+		private String homedir = "/home/jenda";
 		private String[] cmd = { "/bin/sh", "-c", "command" };
 		private String command = "";
 		private String currentDir = "/home/jenda";
@@ -108,6 +108,9 @@ public class Server {
 		private static final String primitive = "7";
 		private String key;
 		private Encipher encipher;
+		private Boolean flagSignIN = false;
+		private Boolean flagSignup = false;
+		private String userName;
 
 		public ClientHandler(Socket socket, DataInputStream dis, DataOutputStream dos) {
 			this.socket = socket;
@@ -119,36 +122,27 @@ public class Server {
 		}
 
 		public void run() {
-			// Requiring user login
-			Boolean flagSignIN = false;
+			int select = 0;
+			String menu = "Select index number to continue:\n"
+						+ "1. Sign up\n"
+						+ "2. Login\n"
+						+ "3. Exit\n";
 			do {
-				Account ac = new Account("root", "12345");
 				try {
-					// Get user name and password from client
-					this.dos.writeUTF(encipher.encrypted("You need login to access into server\nUser name: "));
-					String userName = encipher.decrypted(dis.readUTF());
-					dos.writeUTF(encipher.encrypted("Password: "));
-					String userPass = encipher.decrypted(dis.readUTF());
+					dos.writeUTF(encipher.encrypted(menu));
+					String recieve = encipher.decrypted(dis.readUTF());
+					select = Integer.parseInt(recieve);
 
-					if (userName != null && !userName.isEmpty() && ac.userLogin(userName, userPass)) {
-						if (userName.equals("admin")) {
-							if(ADMIN_STATUS==0){
-								role = 1;
-								dos.writeBoolean(true);
-								flagSignIN = true;
-							} else {
-								dos.writeBoolean(false);
-								flagSignIN = false;
-							}
-						} else {
-							dos.writeBoolean(true);
-							flagSignIN = true;
-							role = 0;
-						}
+					if(select == 1) {
+						doSignup();
+					} else if(select == 2){
+						doLogin();
+					} else if(select == 3){
+						this.socket.close();
 					} else {
-						dos.writeBoolean(false);
-						flagSignIN = false;
+						select = 0;
 					}
+					if(flagSignIN) break;
 				} catch (IOException e) {
 					System.out.println(".=================== Warning ===================.");
 					System.out.println("|Connection to client have just been interupted!|");
@@ -162,7 +156,7 @@ public class Server {
 						e1.printStackTrace();
 					}
 				}
-			} while (!flagSignIN);
+			} while ((select != 1 && select != 2 && select != 3) || (!flagSignIN && !flagSignup));
 
 			// Login successfull
 			if (flagSignIN) {
@@ -171,6 +165,7 @@ public class Server {
 					CURRENT_CLIENTS++;
 					COUNT_CLIENTS_CONNECTED++;
 					flagConnect = true;
+					CLIENT_CONNECTING.add(this.userName);
 				} else {
 					flagConnect = false;
 				}
@@ -197,6 +192,7 @@ public class Server {
 								System.out.println("Disconneted to client");
 								System.out.println("Client: " + socket);
 								CURRENT_CLIENTS--;
+								CLIENT_CONNECTING.remove(this.userName);
 								System.out.println("Numbers of client connecting is: " + CURRENT_CLIENTS);
 								socket.close();
 								break;
@@ -212,6 +208,7 @@ public class Server {
 							System.out.println("Disconneted to client");
 							System.out.println("Client: " + socket);
 							CURRENT_CLIENTS--;
+							CLIENT_CONNECTING.remove(userName);
 							System.out.println("Numbers of client connecting is: " + CURRENT_CLIENTS);
 							try {
 								socket.close();
@@ -233,6 +230,95 @@ public class Server {
 			}
 		}
 		
+		private void doSignup(){
+			do {
+				Account ac = new Account("root", "12345");
+				try {
+					// Get user name and password from client
+					this.dos.writeUTF(encipher.encrypted("New user name: "));
+					userName = encipher.decrypted(dis.readUTF());
+					dos.writeUTF(encipher.encrypted("Password: "));
+					String userPass = encipher.decrypted(dis.readUTF());
+					dos.writeUTF(encipher.encrypted("Re password: "));
+					String userRePass = encipher.decrypted(dis.readUTF());
+
+					if (userName != null && !userName.isEmpty()) {
+						if(userPass.equals(userRePass)){
+							if(ac.userSignup(userName, userPass)){
+								flagSignup = true;
+								dos.writeUTF(encipher.encrypted("Signup successfull!\n"));
+							} else {
+								flagSignup = false;
+								dos.writeUTF(encipher.encrypted("Account '"+userName+"' already existed!\n"));
+							}
+						} else {
+							dos.writeUTF(encipher.encrypted("Password and repassword not match!\n"));
+						}
+					}
+				} catch (IOException e) {
+					System.out.println(".=================== Warning ===================.");
+					System.out.println("|Connection to client have just been interupted!|");
+					System.out.println("'======================...======================'");
+					System.out.println("Numbers of client connecting is: " + CURRENT_CLIENTS);
+					System.out.println();
+					try {
+						if(!socket.isClosed()){
+							socket.close();
+						break;
+						}
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+			} while (!flagSignup);
+		}
+
+		private void doLogin(){
+			// Requiring user login
+			do {
+				Account ac = new Account("root", "12345");
+				try {
+					// Get user name and password from client
+					this.dos.writeUTF(encipher.encrypted("User name: "));
+					userName = encipher.decrypted(dis.readUTF());
+					dos.writeUTF(encipher.encrypted("Password: "));
+					String userPass = encipher.decrypted(dis.readUTF());
+
+					if (userName != null && !userName.isEmpty()) {
+						if(!CLIENT_CONNECTING.contains(userName)){
+							if(ac.userLogin(userName, userPass)){
+								if (userName.equals("admin")) {
+									dos.writeBoolean(true);
+									flagSignIN = true;
+									role = 1;
+								} else {
+									dos.writeBoolean(true);
+									flagSignIN = true;
+									role = 0;
+								}
+							} else {
+								dos.writeBoolean(false);
+								flagSignIN = false;
+							}
+						} else {
+							dos.writeBoolean(false);
+							flagSignIN = false;
+						}
+					} else {
+						dos.writeBoolean(false);
+						flagSignIN = false;
+					}
+				} catch (IOException e) {
+					try {
+						socket.close();
+						break;
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+			} while (!flagSignIN);
+		}
+
 		private boolean exchangeKey(){
 			try{
 				BigInteger p = new BigInteger(prime);

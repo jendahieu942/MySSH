@@ -22,6 +22,11 @@ public class Client {
 	private static final String primitive = "7";
 	private Encipher encipher;
 	private String key;
+	private static Boolean flagSignIn = false;
+	private Scanner sc = new Scanner(System.in);
+	private String command = "";
+	private char[] pass = null;
+	private Console console = null;
 
 	public Client(String ipAdress, int port) {
 		try {
@@ -36,31 +41,35 @@ public class Client {
 			if(exchangeKey()){
 				encipher = new Encipher(this.key);
 				// Now main program
-				Scanner sc = new Scanner(System.in);
-				Boolean flagSignIn = false;
-				String command = "";
-				char[] pass = null;
-				Console console = null;
-				// Login
-				do {
-					sc.reset();
-					String usrname;
-					System.out.print(encipher.decrypted(dis.readUTF()));
-					dos.writeUTF(encipher.encrypted((usrname = sc.nextLine())));
-	
-					System.out.print(encipher.decrypted(dis.readUTF()));
-					console = System.console();
-					pass = console.readPassword();
-					String pwd = Arrays.toString(pass);
-					pwd = pwd.substring(1, pwd.length() - 1);
-					pwd = pwd.replace(", ", "");
-					dos.writeUTF(encipher.encrypted(pwd));
-					flagSignIn = (Boolean) dis.readBoolean();
-					if(usrname.equals("admin") && flagSignIn == false){
-						System.out.print("Only one admin can using server at same time\n");
+				try {
+					String select = "0";
+					do {
+						System.out.println(encipher.decrypted(dis.readUTF()));
+						dos.writeUTF(encipher.encrypted((select = sc.nextLine())));
+						if(select.equals("1")){
+							doSignup();
+						} else if(select.equals("2")){
+							doLogin();
+						} else if(select.equals("3")){
+							socket.close();
+							System.out.println("Bye!");
+							System.exit(0);
+						}
+						if(flagSignIn) break;
+					} while (!flagSignIn || (!select.equals("1") && !select.equals("2") && !select.equals("3")));
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					System.out.println("Failed to connect to server!");
+					if (socket != null) {
+						try {
+							socket.close();
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+						System.out.println("Closed socket! Try again later!");
 					}
-				} while (!flagSignIn);
-	
+				}
 				// Login success
 				if (flagSignIn) {
 					Boolean flagConnect = dis.readBoolean();
@@ -109,6 +118,45 @@ public class Client {
 		}
 	}
 	
+	private void doSignup() {
+
+	}
+
+	private void doLogin(){
+		try{
+			do {
+				sc.reset();
+				String usrname;
+				System.out.print(encipher.decrypted(dis.readUTF()));
+				dos.writeUTF(encipher.encrypted((usrname = sc.nextLine())));
+
+				System.out.print(encipher.decrypted(dis.readUTF()));
+				console = System.console();
+				pass = console.readPassword();
+				String pwd = Arrays.toString(pass);
+				pwd = pwd.substring(1, pwd.length() - 1);
+				pwd = pwd.replace(", ", "");
+				dos.writeUTF(encipher.encrypted(pwd));
+				flagSignIn = (Boolean) dis.readBoolean();
+				if(flagSignIn == false){
+					System.out.print("Username '"+usrname+"' incorect or another user using this account in server.\n");
+				} 
+			} while(!flagSignIn);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("Failed to connect to server!");
+			if (socket != null) {
+				try {
+					socket.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				System.out.println("Closed socket! Try again later!");
+			}
+		}
+	}
+
 	private boolean exchangeKey(){
 		try{
 			BigInteger p = new BigInteger(prime);

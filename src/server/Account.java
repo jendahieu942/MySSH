@@ -2,6 +2,7 @@ package server;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -24,6 +25,62 @@ public class Account {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public boolean checkUsername(String userName){
+		String queryString = "SELECT * FROM user WHERE userName =\'"+userName+"\'";
+		Statement stm;
+		try {
+			stm = connect.createStatement();
+			this.result = stm.executeQuery(queryString);
+
+			while (result.next()) {
+				if(result.getInt(1)>0) {
+					return false;
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				connect.close();
+				result.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return true;
+	}
+
+	public boolean userSignup(String userName, String userPass) {
+		if(checkUsername(userName)){
+			String queryString = "INSERT INTO user(userName,userPass,role) VALUES(?,?,?)";
+			PreparedStatement pStatement;
+			try {
+				pStatement = connect.prepareStatement(queryString);
+				pStatement.setString(1, userName);
+				pStatement.setString(2, userPass);
+				pStatement.setInt(3, 1);
+				int count = pStatement.executeUpdate();
+				if(count > 0) {
+					return true;
+				} else {
+					return false;
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					connect.close();
+					result.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			return false;
+		}
+		return false;
 	}
 
 	public boolean userLogin(String userName, String userPass){
