@@ -23,6 +23,8 @@ public class Server {
 	final int MAX_CLIENTS = 5;
 	final int PORT = 6969;
 	static int CURRENT_CLIENTS = 0;
+	static int COUNT_CLIENTS_WANNA_CONNECT = 0;
+	static int COUNT_CLIENTS_CONNECTED = 0;
 
 	private ServerSocket server;
 
@@ -57,6 +59,7 @@ public class Server {
 				System.out.println("Client: " + socket);
 				System.out.println("Wating client login ... ");
 				System.out.println("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*");
+				COUNT_CLIENTS_WANNA_CONNECT++;
 
 				// Obtaining input and out stream
 				DataInputStream dis = new DataInputStream(socket.getInputStream());
@@ -79,7 +82,7 @@ public class Server {
 			server.close();
             System.out.println("Server closed!\n");
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Program exiting . . .");
 		}
     }
 	private /**
@@ -149,6 +152,7 @@ public class Server {
 				Boolean flagConnect = false;
 				if (CURRENT_CLIENTS < MAX_CLIENTS) {
 					CURRENT_CLIENTS++;
+					COUNT_CLIENTS_CONNECTED++;
 					flagConnect = true;
 				} else {
 					flagConnect = false;
@@ -234,6 +238,8 @@ public class Server {
 				result = nano_command(command_arr);
 			} else if (command_arr[0].equals("stop")) {
 				result = stop_command(command_arr);
+			} else if (command_arr[0].endsWith("statistic")) {
+				result = statisitic_command(command_arr);
 			} else if (command_arr[0].isEmpty() || command.isEmpty()) {
 				result = "";
 			} else {
@@ -244,20 +250,40 @@ public class Server {
 			return result;
 		}
 
+		private String statisitic_command(String[] command_arr) {
+			String result = "";
+			if(role == 1){
+				if(command_arr.length==1){
+					result = " - Numbers of client tried connect: " + COUNT_CLIENTS_WANNA_CONNECT + "\n";
+					result += " - Numbers of client connected: " + COUNT_CLIENTS_CONNECTED + "\n";
+					result += " - Numbers of client connecting: " + CURRENT_CLIENTS + "\n";
+				} else {
+					result = "statistic: Syntax error\n";
+				}
+			} else {
+				result = "Permision denied!\n";
+			}
+			return result;
+		}
+
 		private String stop_command(String[] command_arr) {
 			String result = "";
 			if(role  == 1){
-				extracted();
-				try {
-					if(server.isClosed()){
-						this.socket.close();
-						result = "Server closed!\n";
-						System.exit(0);
-					} else {
-						result = "Server still running!\n";
+				if(command_arr.length == 1){
+					extracted();
+					try {
+						if(server.isClosed()){
+							this.socket.close();
+							result = "Server closed!\n";
+							System.exit(0);
+						} else {
+							result = "Server still running!\n";
+						}
+					} catch (IOException e) {
+						System.out.println("Exit program by admin, you need start manually!\n");
 					}
-				} catch (IOException e) {
-					System.out.println("Exit program by admin, you need start manually!\n");
+				} else {
+					result = "stop: Syntax error\n";
 				}
 			} else {
 				result = "Permision denied!\n";
