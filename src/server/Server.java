@@ -322,7 +322,7 @@ public class Server {
 			try {
 				BigInteger p = new BigInteger(prime);
 				BigInteger alpha = new BigInteger(primitive);
-				int a = new Random().nextInt(1000);
+				int a = new Random().nextInt(1000) + 1;
 				dos.writeUTF(alpha.pow(a).mod(p).toString());
 				BigInteger b = new BigInteger(dis.readUTF());
 				this.key = b.pow(a).mod(p).toString();
