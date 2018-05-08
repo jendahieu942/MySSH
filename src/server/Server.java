@@ -79,15 +79,16 @@ public class Server {
 		}
 	}
 
-    public void stopServer(){
-        try {
-            System.out.println("Closing server . . . \n");
+	public void stopServer() {
+		try {
+			System.out.println("Closing server . . . \n");
 			server.close();
-            System.out.println("Server closed!\n");
+			System.out.println("Server closed!\n");
 		} catch (IOException e) {
 			System.out.println("Program exiting . . .");
 		}
-    }
+	}
+
 	private /**
 			 * ClientHandler
 			 */
@@ -104,7 +105,7 @@ public class Server {
 		private String namepoint = "~ $ ";
 		private BufferedReader bReader;
 		private int role;
-		private static final String prime ="359334085968622831041960188598043661065388726959079837";
+		private static final String prime = "359334085968622831041960188598043661065388726959079837";
 		private static final String primitive = "7";
 		private String key;
 		private Encipher encipher;
@@ -116,48 +117,42 @@ public class Server {
 			this.socket = socket;
 			this.dis = dis;
 			this.dos = dos;
-			if(exchangeKey()){
+			if (exchangeKey()) {
 				this.encipher = new Encipher(this.key);
 			}
 		}
 
 		public void run() {
 			int select = 0;
-			String menu = "Select index number to continue:\n"
-						+ "1. Sign up\n"
-						+ "2. Login\n"
-						+ "3. Exit\n";
-			do {
-				try {
+			String menu = "Select index number to continue:\n" + "1. Sign up\n" + "2. Login\n" + "3. Exit\n";
+			try {
+				do {
 					dos.writeUTF(encipher.encrypted(menu));
 					String recieve = encipher.decrypted(dis.readUTF());
-					select = Integer.parseInt(recieve);
 
-					if(select == 1) {
+					if (recieve.equals("1")) {
 						doSignup();
-					} else if(select == 2){
+					} else if (recieve.endsWith("2")) {
 						doLogin();
-					} else if(select == 3){
+					} else if (recieve.equals("3")) {
 						this.socket.close();
 					} else {
 						select = 0;
 					}
-					if(flagSignIN) break;
-					if(flagSignup) continue;
-				} catch (IOException e) {
-					System.out.println(".=================== Warning ===================.");
-					System.out.println("|Connection to client have just been interupted!|");
-					System.out.println("'======================...======================'");
-					System.out.println("Numbers of client connecting is: " + CURRENT_CLIENTS);
-					System.out.println();
-					try {
-						socket.close();
-						break;
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
+					if (flagSignIN) break;
+				} while (select == 0 || flagSignup);
+			} catch (IOException e) {
+				System.out.println(".=================== Warning ===================.");
+				System.out.println("|Connection to client have just been interupted!|");
+				System.out.println("'======================...======================'");
+				System.out.println("Numbers of client connecting is: " + CURRENT_CLIENTS);
+				System.out.println();
+				try {
+					socket.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
 				}
-			} while ((select != 1 || select != 2 || select != 3));
+			}
 
 			// Login successfull
 			if (flagSignIN) {
@@ -230,8 +225,9 @@ public class Server {
 				}
 			}
 		}
-		
-		private void doSignup(){
+
+		private void doSignup() {
+			flagSignup = false;
 			do {
 				Account ac = new Account("root", "12345");
 				try {
@@ -244,25 +240,23 @@ public class Server {
 					String userRePass = encipher.decrypted(dis.readUTF());
 
 					if (userName != null && !userName.isEmpty()) {
-						if(userPass.equals(userRePass)){
-							if(ac.userSignup(userName, userPass)){
+						if (userPass.equals(userRePass)) {
+							if (ac.userSignup(userName, userPass)) {
 								flagSignup = true;
 								dos.writeUTF(encipher.encrypted("Signup successfull!\n"));
 							} else {
-								flagSignup = false;
-								dos.writeUTF(encipher.encrypted("Account '"+userName+"' already existed!\n"));
+								dos.writeUTF(encipher.encrypted("Account '" + userName + "' already existed!\n"));
 							}
 						} else {
 							dos.writeUTF(encipher.encrypted("Password and repassword not match!\n"));
 						}
 					} else {
-						flagSignup = false;
 						dos.writeUTF(encipher.encrypted("User name can not be empty!"));
 					}
 					dos.writeBoolean(flagSignup);
 				} catch (IOException e) {
 					try {
-						if(!socket.isClosed()){
+						if (!socket.isClosed()) {
 							socket.close();
 						}
 						break;
@@ -273,7 +267,7 @@ public class Server {
 			} while (!flagSignup);
 		}
 
-		private void doLogin(){
+		private void doLogin() {
 			// Requiring user login
 			do {
 				Account ac = new Account("root", "12345");
@@ -285,9 +279,9 @@ public class Server {
 					String userPass = encipher.decrypted(dis.readUTF());
 
 					if (userName != null && !userName.isEmpty()) {
-						if(!CLIENT_CONNECTING.contains(userName)){
+						if (!CLIENT_CONNECTING.contains(userName)) {
 							dos.writeUTF(encipher.encrypted("Nobody sign up this account"));
-							if(ac.userLogin(userName, userPass)){
+							if (ac.userLogin(userName, userPass)) {
 								if (userName.equals("admin")) {
 									dos.writeBoolean(true);
 									flagSignIN = true;
@@ -313,10 +307,10 @@ public class Server {
 					}
 				} catch (IOException e) {
 					try {
-						if(!socket.isClosed()){
+						if (!socket.isClosed()) {
 							socket.close();
 						}
-						break;						
+						break;
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
@@ -324,8 +318,8 @@ public class Server {
 			} while (!flagSignIN);
 		}
 
-		private boolean exchangeKey(){
-			try{
+		private boolean exchangeKey() {
+			try {
 				BigInteger p = new BigInteger(prime);
 				BigInteger alpha = new BigInteger(primitive);
 				int a = new Random().nextInt(1000);
@@ -333,7 +327,7 @@ public class Server {
 				BigInteger b = new BigInteger(dis.readUTF());
 				this.key = b.pow(a).mod(p).toString();
 				return true;
-			}catch (Exception e){
+			} catch (Exception e) {
 				System.out.println("Error: Exchange key");
 				return false;
 			}
@@ -355,7 +349,7 @@ public class Server {
 				result = rm_command(command_arr);
 			} else if (command_arr[0].equals("mkdir")) {
 				result = mkdir_command(command_arr);
-			} else if (command_arr[0].equals("echo")){
+			} else if (command_arr[0].equals("echo")) {
 				result = echo_command(command_arr);
 			} else if (command_arr[0].equals("nano")) {
 				result = nano_command(command_arr);
@@ -375,8 +369,8 @@ public class Server {
 
 		private String statisitic_command(String[] command_arr) {
 			String result = "";
-			if(role == 1){
-				if(command_arr.length==1){
+			if (role == 1) {
+				if (command_arr.length == 1) {
 					result = " - Numbers of client tried connect: " + COUNT_CLIENTS_WANNA_CONNECT + "\n";
 					result += " - Numbers of client connected: " + COUNT_CLIENTS_CONNECTED + "\n";
 					result += " - Numbers of client connecting: " + CURRENT_CLIENTS + "\n";
@@ -391,11 +385,11 @@ public class Server {
 
 		private String stop_command(String[] command_arr) {
 			String result = "";
-			if(role  == 1){
-				if(command_arr.length == 1){
+			if (role == 1) {
+				if (command_arr.length == 1) {
 					extracted();
 					try {
-						if(server.isClosed()){
+						if (server.isClosed()) {
 							this.socket.close();
 							result = "Server closed!\n";
 							System.exit(0);
@@ -420,13 +414,13 @@ public class Server {
 
 		private String nano_command(String[] command_arr) {
 			String result = "";
-			if(getSubdir().contains(command_arr[1])){
+			if (getSubdir().contains(command_arr[1])) {
 				String filepath = currentDir + "/" + command_arr[1];
 				try {
 					bReader = new BufferedReader(new FileReader(filepath));
 					String line = "";
-					while((line = bReader.readLine())!= null){
-						result += line +"\n";
+					while ((line = bReader.readLine()) != null) {
+						result += line + "\n";
 					}
 				} catch (FileNotFoundException e1) {
 					e1.printStackTrace();
@@ -441,26 +435,26 @@ public class Server {
 
 		private String echo_command(String[] command_arr) {
 			String result = "";
-			if(command_arr.length == 2){
+			if (command_arr.length == 2) {
 				result = command_arr[1];
-			} else if(command_arr.length == 4){
+			} else if (command_arr.length == 4) {
 				cmd[2] = "cd " + currentDir + "; echo " + command_arr[1] + " " + command_arr[2] + " " + command_arr[3];
 				try {
 					process = runtime.exec(cmd);
 					int exitvalue = process.waitFor();
-					if(exitvalue != 0) {
+					if (exitvalue != 0) {
 						bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 						String line = "";
-						while ((line = bReader.readLine())!= null) {
+						while ((line = bReader.readLine()) != null) {
 							result += line + "\n";
 						}
-					}			
+					}
 				} catch (IOException e) {
 					e.printStackTrace();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				
+
 			} else {
 				result = "echo: Error syntax\n";
 			}
@@ -469,23 +463,23 @@ public class Server {
 
 		private String mkdir_command(String[] command_arr) {
 			String result = "";
-			if(command_arr.length == 1){
+			if (command_arr.length == 1) {
 				result = "mkdir: The directory's name could not be empty\n";
 			} else {
 				List<String> subdir = getSubdir();
-				if(subdir.contains(command_arr[1])){
-					result = "mkdir: Directory named " + command_arr[1] +" already exist!\n";
+				if (subdir.contains(command_arr[1])) {
+					result = "mkdir: Directory named " + command_arr[1] + " already exist!\n";
 				} else {
 					cmd[2] = "cd " + currentDir + "; mkdir " + command_arr[1];
 					try {
 						process = runtime.exec(cmd);
-						if(process.waitFor() != 0 ){
+						if (process.waitFor() != 0) {
 							result = "";
 						} else {
 							bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 							String line = "";
-							while((line = bReader.readLine()) != null){
-								result += line +"\n";
+							while ((line = bReader.readLine()) != null) {
+								result += line + "\n";
 							}
 						}
 					} catch (IOException e) {
@@ -696,39 +690,39 @@ public class Server {
 				if (command_arr[1].equals(".")) {
 					result = "";
 				} else if (command_arr[1].startsWith("..")) {
-                    if(command_arr[1].equals("..")){
-                        if (currentDir.equals(homedir)) {
-                            result = "Permission denied! Can't move to this directory.\n";
-                        } else {
-                            String[] dirpath = currentDir.split("/");
-                            currentDir = String.join("/", Arrays.copyOf(dirpath, dirpath.length - 1));
-                        }
-                    } else {
-                        String[] dirpath = command_arr[1].split("/");
-                        String[] newdirpath = currentDir.split("/");
+					if (command_arr[1].equals("..")) {
+						if (currentDir.equals(homedir)) {
+							result = "Permission denied! Can't move to this directory.\n";
+						} else {
+							String[] dirpath = currentDir.split("/");
+							currentDir = String.join("/", Arrays.copyOf(dirpath, dirpath.length - 1));
+						}
+					} else {
+						String[] dirpath = command_arr[1].split("/");
+						String[] newdirpath = currentDir.split("/");
 
 						// initial
-                        String realcurrentDir = currentDir;
-                        String newcurrentDir = String.join("/", Arrays.copyOf(newdirpath, newdirpath.length - 1));
-                        currentDir = newcurrentDir;
-                        List<String> subdirList = getSubdir();
-                        currentDir = realcurrentDir;
+						String realcurrentDir = currentDir;
+						String newcurrentDir = String.join("/", Arrays.copyOf(newdirpath, newdirpath.length - 1));
+						currentDir = newcurrentDir;
+						List<String> subdirList = getSubdir();
+						currentDir = realcurrentDir;
 
 						// do check
-                        if(dirpath.length == 2){
-                            if(subdirList.contains(dirpath[1])){
-                                if (!(new File(newcurrentDir + "/" + dirpath[1]).isDirectory())){
-                                    result += "cd: That's not directory\n";
-                                } else {
-                                    currentDir = newcurrentDir + "/" + dirpath[1];
-                                }
-                            } else {
-                                result += "cd: Not found directory\n";
-                            }
-                        } else {
-                            result += "Please, you should move directory step by step\n";
-                        }
-                    }
+						if (dirpath.length == 2) {
+							if (subdirList.contains(dirpath[1])) {
+								if (!(new File(newcurrentDir + "/" + dirpath[1]).isDirectory())) {
+									result += "cd: That's not directory\n";
+								} else {
+									currentDir = newcurrentDir + "/" + dirpath[1];
+								}
+							} else {
+								result += "cd: Not found directory\n";
+							}
+						} else {
+							result += "Please, you should move directory step by step\n";
+						}
+					}
 				} else if (subdir.contains(command_arr[1])) {
 					if (!(new File(currentDir + "/" + command_arr[1]).isDirectory())) {
 						result = "error: " + command_arr[1] + ": Not a directory\n";

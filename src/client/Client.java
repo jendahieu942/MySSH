@@ -55,10 +55,11 @@ public class Client {
 							socket.close();
 							System.out.println("Bye!");
 							System.exit(0);
+						} else {
+							select = "0";
 						}
 						if(flagSignIn) break;
-						if(flagSignup) continue;
-					} while ((!select.equals("1") || !select.equals("2") || !select.equals("3")));
+					} while (select.equals("0") || flagSignup);
 				} catch (UnknownHostException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
@@ -121,6 +122,7 @@ public class Client {
 	}
 	
 	private void doSignup() {
+		flagSignup = false;
 		try{
 			do {
 				sc.reset();
