@@ -143,6 +143,7 @@ public class Server {
 						select = 0;
 					}
 					if(flagSignIN) break;
+					if(flagSignup) continue;
 				} catch (IOException e) {
 					System.out.println(".=================== Warning ===================.");
 					System.out.println("|Connection to client have just been interupted!|");
@@ -156,7 +157,7 @@ public class Server {
 						e1.printStackTrace();
 					}
 				}
-			} while ((select != 1 && select != 2 && select != 3) || (!flagSignIN && !flagSignup));
+			} while ((select != 1 || select != 2 || select != 3));
 
 			// Login successfull
 			if (flagSignIN) {
@@ -254,18 +255,17 @@ public class Server {
 						} else {
 							dos.writeUTF(encipher.encrypted("Password and repassword not match!\n"));
 						}
+					} else {
+						flagSignup = false;
+						dos.writeUTF(encipher.encrypted("User name can not be empty!"));
 					}
+					dos.writeBoolean(flagSignup);
 				} catch (IOException e) {
-					System.out.println(".=================== Warning ===================.");
-					System.out.println("|Connection to client have just been interupted!|");
-					System.out.println("'======================...======================'");
-					System.out.println("Numbers of client connecting is: " + CURRENT_CLIENTS);
-					System.out.println();
 					try {
 						if(!socket.isClosed()){
 							socket.close();
-						break;
 						}
+						break;
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
@@ -286,6 +286,7 @@ public class Server {
 
 					if (userName != null && !userName.isEmpty()) {
 						if(!CLIENT_CONNECTING.contains(userName)){
+							dos.writeUTF(encipher.encrypted("Nobody sign up this account"));
 							if(ac.userLogin(userName, userPass)){
 								if (userName.equals("admin")) {
 									dos.writeBoolean(true);
@@ -301,17 +302,21 @@ public class Server {
 								flagSignIN = false;
 							}
 						} else {
+							dos.writeUTF(encipher.encrypted("Another people signed up"));
 							dos.writeBoolean(false);
 							flagSignIN = false;
 						}
 					} else {
+						dos.writeUTF(encipher.encrypted("User name can not be empty!"));
 						dos.writeBoolean(false);
 						flagSignIN = false;
 					}
 				} catch (IOException e) {
 					try {
-						socket.close();
-						break;
+						if(!socket.isClosed()){
+							socket.close();
+						}
+						break;						
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}

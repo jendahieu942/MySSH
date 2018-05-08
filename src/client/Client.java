@@ -23,6 +23,7 @@ public class Client {
 	private Encipher encipher;
 	private String key;
 	private static Boolean flagSignIn = false;
+	private static Boolean flagSignup = false;
 	private Scanner sc = new Scanner(System.in);
 	private String command = "";
 	private char[] pass = null;
@@ -56,7 +57,8 @@ public class Client {
 							System.exit(0);
 						}
 						if(flagSignIn) break;
-					} while (!flagSignIn || (!select.equals("1") && !select.equals("2") && !select.equals("3")));
+						if(flagSignup) continue;
+					} while ((!select.equals("1") || !select.equals("2") || !select.equals("3")));
 				} catch (UnknownHostException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
@@ -119,16 +121,55 @@ public class Client {
 	}
 	
 	private void doSignup() {
+		try{
+			do {
+				sc.reset();
+				// username 
+				System.out.print(encipher.decrypted(dis.readUTF()));
+				dos.writeUTF(encipher.encrypted(sc.nextLine()));
 
+				// password
+				System.out.print(encipher.decrypted(dis.readUTF()));
+				console = System.console();
+				pass = console.readPassword();
+				String pwd = Arrays.toString(pass);
+				pwd = pwd.substring(1, pwd.length() - 1);
+				pwd = pwd.replace(", ", "");
+				dos.writeUTF(encipher.encrypted(pwd));
+
+				// repassword
+				System.out.print(encipher.decrypted(dis.readUTF()));
+				console = System.console();
+				pass = console.readPassword();
+				String repwd = Arrays.toString(pass);
+				repwd = repwd.substring(1, repwd.length() - 1);
+				repwd = repwd.replace(", ", "");
+				dos.writeUTF(encipher.encrypted(repwd));
+				
+				// notify
+				String notify = encipher.decrypted(dis.readUTF());
+				flagSignup = (Boolean) dis.readBoolean();
+				System.out.println(notify);
+			} while(!flagSignup);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			if (socket != null) {
+				try {
+					socket.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		}
 	}
 
 	private void doLogin(){
 		try{
 			do {
 				sc.reset();
-				String usrname;
 				System.out.print(encipher.decrypted(dis.readUTF()));
-				dos.writeUTF(encipher.encrypted((usrname = sc.nextLine())));
+				dos.writeUTF(encipher.encrypted(sc.nextLine()));
 
 				System.out.print(encipher.decrypted(dis.readUTF()));
 				console = System.console();
@@ -137,22 +178,21 @@ public class Client {
 				pwd = pwd.substring(1, pwd.length() - 1);
 				pwd = pwd.replace(", ", "");
 				dos.writeUTF(encipher.encrypted(pwd));
+				String notify = encipher.decrypted(dis.readUTF());
 				flagSignIn = (Boolean) dis.readBoolean();
 				if(flagSignIn == false){
-					System.out.print("Username '"+usrname+"' incorect or another user using this account in server.\n");
+					System.out.println(notify);
 				} 
 			} while(!flagSignIn);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			System.out.println("Failed to connect to server!");
 			if (socket != null) {
 				try {
 					socket.close();
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-				System.out.println("Closed socket! Try again later!");
 			}
 		}
 	}

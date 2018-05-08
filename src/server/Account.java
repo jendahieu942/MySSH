@@ -43,7 +43,6 @@ public class Account {
 			e.printStackTrace();
 		} finally {
 			try {
-				connect.close();
 				result.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
