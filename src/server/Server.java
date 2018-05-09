@@ -179,6 +179,18 @@ public class Server {
 
 					// Initial for request handler
 					runtime = Runtime.getRuntime();
+					List<String> listdir = getSubdir();
+					if(listdir.contains(userName)){
+						currentDir += "/"+userName;
+					} else {
+						cmd[2] = "cd " + currentDir + "; mkdir " + userName;
+						try {
+							process = runtime.exec(cmd);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						currentDir += "/"+userName;
+					}
 					String replyString = "";
 					while (true) {
 						// Now command handler from client
@@ -247,7 +259,7 @@ public class Server {
 							} else {
 								dos.writeUTF(encipher.encrypted("Account '" + userName + "' already existed!\n"));
 							}
-						} else {
+						} else { 	
 							dos.writeUTF(encipher.encrypted("Password and repassword not match!\n"));
 						}
 					} else {
@@ -362,7 +374,8 @@ public class Server {
 			} else {
 				result = "bash: " + command_arr[0] + ": Command not found!\n";
 			}
-			namepoint = currentDir.replace(homedir, "~") + " $ ";
+			
+			namepoint = userName + "@DSHUST" + currentDir.replace(homedir, " ~") + " $ ";
 			result += namepoint;
 			return result;
 		}

@@ -28,6 +28,7 @@ public class Client {
 	private String command = "";
 	private char[] pass = null;
 	private Console console = null;
+	private static String userName;
 
 	public Client(String ipAdress, int port) {
 		try {
@@ -78,7 +79,7 @@ public class Client {
 					Boolean flagConnect = dis.readBoolean();
 					if (flagConnect) {
 						System.out.println("Signed in!");
-						System.out.print("~ $ ");
+						System.out.print("Press any key . . .\n");
 						while (true) {
 							command = sc.nextLine();
 							command = String.join("###", command.split("( )+(?=([^\"]*\"[^\"]*\")*[^\"]*$)"));
@@ -126,9 +127,9 @@ public class Client {
 		try{
 			do {
 				sc.reset();
-				// username 
 				System.out.print(encipher.decrypted(dis.readUTF()));
-				dos.writeUTF(encipher.encrypted(sc.nextLine()));
+				Client.userName = sc.nextLine();
+				dos.writeUTF(encipher.encrypted(userName));
 
 				// password
 				System.out.print(encipher.decrypted(dis.readUTF()));
