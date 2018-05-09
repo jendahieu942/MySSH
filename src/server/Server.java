@@ -96,10 +96,10 @@ public class Server {
 		final DataInputStream dis;
 		final DataOutputStream dos;
 		final Socket socket;
-		private String homedir = "/home/jenda";
+		private String homedir = "/home/jenda/DS";
 		private String[] cmd = { "/bin/sh", "-c", "command" };
 		private String command = "";
-		private String currentDir = "/home/jenda";
+		private String currentDir = "/home/jenda/DS";
 		private Runtime runtime;
 		private Process process;
 		private String namepoint = "~ $ ";
@@ -292,18 +292,21 @@ public class Server {
 
 					if (userName != null && !userName.isEmpty()) {
 						if (!CLIENT_CONNECTING.contains(userName)) {
-							dos.writeUTF(encipher.encrypted("Nobody sign up this account"));
+							String notify = "Nobody sign up this account";
 							if (ac.userLogin(userName, userPass)) {
 								if (userName.equals("admin")) {
+									dos.writeUTF(encipher.encrypted(notify));
 									dos.writeBoolean(true);
 									flagSignIN = true;
 									role = 1;
 								} else {
+									dos.writeUTF(encipher.encrypted(notify));
 									dos.writeBoolean(true);
 									flagSignIN = true;
 									role = 0;
 								}
 							} else {
+								dos.writeUTF(encipher.encrypted("Password or username was wrong"));
 								dos.writeBoolean(false);
 								flagSignIN = false;
 							}
@@ -367,8 +370,12 @@ public class Server {
 				result = nano_command(command_arr);
 			} else if (command_arr[0].equals("stop")) {
 				result = stop_command(command_arr);
-			} else if (command_arr[0].endsWith("statistic")) {
+			} else if (command_arr[0].equals("statistic")) {
 				result = statisitic_command(command_arr);
+			} else if (command_arr[0].equals("mv")) {
+				result = mv_command(command_arr);
+			} else if (command_arr[0].equals("cp")) {
+				result = cp_command(command_arr);
 			} else if (command_arr[0].isEmpty() || command.isEmpty()) {
 				result = "";
 			} else {
@@ -377,6 +384,102 @@ public class Server {
 			
 			namepoint = userName + "@DSHUST" + currentDir.replace(homedir, " ~") + " $ ";
 			result += namepoint;
+			return result;
+		}
+
+		private String cp_command(String[] command_arr) {
+			String result = "";
+			if(!currentDir.startsWith(homedir+"/"+userName)) {
+				result = "Permision denied!\n";
+			} else {
+				if(command_arr.length == 1) {
+					result = "Missing operand\n";
+				} else if (command_arr.length == 2) {
+					cmd[2] = "cd "+currentDir + "; cp " + command_arr[1];
+				} else if (command_arr.length == 3) {
+					cmd[2] = "cd "+currentDir + "; cp " + command_arr[1] + " " + command_arr[2];
+				} 
+				
+				if(command_arr.length < 4) {
+					try {
+						process = runtime.exec(cmd);
+						int exitValue = process.waitFor();
+						if(exitValue != 0 ) {
+							bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+							String line = "";
+							while ((line = bReader.readLine()) != null) {
+								result += line + "\n";
+							}
+						} else {
+							bReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+							String line = "";
+							while ((line = bReader.readLine()) != null) {
+								result += line + "\n";
+							}
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				} else {
+					result = "Syntax error\n";
+				}
+			}
+			return result;
+		}
+
+		private String mv_command(String[] command_arr) {
+			String result = "";
+			if(!currentDir.startsWith(homedir+"/"+userName)) {
+				result = "Permision denied!\n";
+			} else {
+				if(command_arr.length == 1) {
+					result = "Missing operand\n";
+				} else if(command_arr.length == 3){
+					cmd[2] = "cd "+currentDir + "; mv "+command_arr[1] + " " + command_arr[2];
+					try {
+						process = runtime.exec(cmd);
+						int exitValue = process.waitFor();
+						if(exitValue != 0 ) {
+							bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+							String line = "";
+							while ((line = bReader.readLine()) != null) {
+								result += line + "\n";
+							}
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				} else if(command_arr.length == 2) {
+					cmd[2] = "cd "+currentDir+"; mv "+ command_arr[1];
+					try {
+						process = runtime.exec(cmd);
+						int exitValue = process.waitFor();
+						if(exitValue != 0 ) {
+							bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+							String line = "";
+							while ((line = bReader.readLine()) != null) {
+								result += line + "\n";
+							}
+						} else {
+							bReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+							String line = "";
+							while ((line = bReader.readLine()) != null) {
+								result += line + "\n";
+							}
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				} else {
+					result = "Syntax error\n";
+				}
+			}
 			return result;
 		}
 
@@ -427,21 +530,26 @@ public class Server {
 
 		private String nano_command(String[] command_arr) {
 			String result = "";
-			if (getSubdir().contains(command_arr[1])) {
-				String filepath = currentDir + "/" + command_arr[1];
-				try {
-					bReader = new BufferedReader(new FileReader(filepath));
-					String line = "";
-					while ((line = bReader.readLine()) != null) {
-						result += line + "\n";
-					}
-				} catch (FileNotFoundException e1) {
-					e1.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			if(!currentDir.startsWith(homedir+"/"+userName)) {
+				result = "Permision denied\n";
+				result += "It's not yours!\n";
 			} else {
-				result += "nano: File not found\n";
+				if (getSubdir().contains(command_arr[1])) {
+					String filepath = currentDir + "/" + command_arr[1];
+					try {
+						bReader = new BufferedReader(new FileReader(filepath));
+						String line = "";
+						while ((line = bReader.readLine()) != null) {
+							result += line + "\n";
+						}
+					} catch (FileNotFoundException e1) {
+						e1.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				} else {
+					result += "nano: File not found\n";
+				}
 			}
 			return result;
 		}
@@ -449,7 +557,7 @@ public class Server {
 		private String echo_command(String[] command_arr) {
 			String result = "";
 			if (command_arr.length == 2) {
-				result = command_arr[1];
+				result = command_arr[1] + "\n";
 			} else if (command_arr.length == 4) {
 				cmd[2] = "cd " + currentDir + "; echo " + command_arr[1] + " " + command_arr[2] + " " + command_arr[3];
 				try {
@@ -476,29 +584,34 @@ public class Server {
 
 		private String mkdir_command(String[] command_arr) {
 			String result = "";
-			if (command_arr.length == 1) {
-				result = "mkdir: The directory's name could not be empty\n";
+			if(!currentDir.startsWith(homedir+"/"+userName)) {
+				result = "Permision denied!\n";
+				result += "Here's not your home\n";
 			} else {
-				List<String> subdir = getSubdir();
-				if (subdir.contains(command_arr[1])) {
-					result = "mkdir: Directory named " + command_arr[1] + " already exist!\n";
+				if (command_arr.length == 1) {
+					result = "mkdir: The directory's name could not be empty\n";
 				} else {
-					cmd[2] = "cd " + currentDir + "; mkdir " + command_arr[1];
-					try {
-						process = runtime.exec(cmd);
-						if (process.waitFor() != 0) {
-							result = "";
-						} else {
-							bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-							String line = "";
-							while ((line = bReader.readLine()) != null) {
-								result += line + "\n";
+					List<String> subdir = getSubdir();
+					if (subdir.contains(command_arr[1])) {
+						result = "mkdir: Directory named " + command_arr[1] + " already exist!\n";
+					} else {
+						cmd[2] = "cd " + currentDir + "; mkdir " + command_arr[1];
+						try {
+							process = runtime.exec(cmd);
+							if (process.waitFor() != 0) {
+								result = "";
+							} else {
+								bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+								String line = "";
+								while ((line = bReader.readLine()) != null) {
+									result += line + "\n";
+								}
 							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
 						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
 					}
 				}
 			}
@@ -540,101 +653,106 @@ public class Server {
 		private String rm_command(String[] command_arr) {
 			String result = "";
 			List<String> subdir = getSubdir();
-			if (command_arr.length == 1) {
-				result = "rm: missing operand\n";
-			} else if (command_arr.length == 2) {
-				if (command_arr[1].startsWith("-")) {
-					if (command_arr[1].equals("-") || command_arr[1].equals("--")) {
-						result = "rm: Missing operand\n";
-					} else if (command_arr[1].equals("--help")) {
-						result = "USAGE: rm [OPTION] ... [FILE] ... \n";
-						result += "[OPTION]\n";
-						result += "  -d\t     remove empty directory\n";
-						result += "  -r, -R   remove directory and their content\n\n";
-						result += "By default, rm does not remove directories.  Use the --recursive (-r or -R)\n"
-								+ "option to remove each listed directory, too, along with all of its contents.\n\n"
-								+ "To remove a file whose name starts with a '-', for example '-foo',\n"
-								+ "use one of these commands:\n" + "rm -- -foo\n" + "rm ./-foo\n";
-					}
-				} else {
-					if (subdir.contains(command_arr[1])) {
-						cmd[2] = "cd " + currentDir + "; rm " + command_arr[1];
-						try {
-							process = runtime.exec(cmd);
-							int exitvalue = process.waitFor();
-							if (exitvalue == 0) {
-								result = "";
-							} else {
-								bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-								String line = "";
-								while ((line = bReader.readLine()) != null) {
-									result += line + "\n";
-								}
-							}
-						} catch (IOException e) {
-							e.printStackTrace();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-				}
+			if(!currentDir.startsWith(homedir+"/"+userName)) {
+				result = "Permission denied!\n";
+				result += "You can not do any stuff in other directory\n";
 			} else {
-				if (command_arr[1].startsWith("-")) {
-					if (command_arr[1].equals("-d")) {
-						if (subdir.contains(command_arr[2])) {
-							if ((new File(currentDir + "/" + command_arr[2]).isDirectory())) {
-								String realcurrentDir = currentDir.toString();
-								currentDir = currentDir + "/" + command_arr[2];
-								List<String> subdir1 = getSubdir();
-								currentDir = realcurrentDir;
-								if (subdir1.size() == 0) {
-									cmd[2] = "cd " + currentDir + "; rm -d " + command_arr[2];
-									try {
-										process = runtime.exec(cmd);
-										int exitvalue = process.waitFor();
-										if (exitvalue == 0) {
-											result = "";
-										} else {
-											result = "rm: Can not remove this directory.\n";
-										}
-									} catch (IOException e) {
-										e.printStackTrace();
-									} catch (InterruptedException e) {
-										e.printStackTrace();
-									}
-								} else {
-									result = "rm: This directory is not empty\n";
-									result += "Use \'-r\' or \'-R\' argument to remove non-empty directory.\n";
-								}
-							} else {
-								result = "rm: " + "\'" + command_arr[2] + "\': Is not directory\n";
-								result += "\'-d\' is optional argument for directory.\n";
-							}
-						} else {
-							result = "rm: " + command_arr[2] + ": Is not file or directory!\n";
+				if (command_arr.length == 1) {
+					result = "rm: missing operand\n";
+				} else if (command_arr.length == 2) {
+					if (command_arr[1].startsWith("-")) {
+						if (command_arr[1].equals("-") || command_arr[1].equals("--")) {
+							result = "rm: Missing operand\n";
+						} else if (command_arr[1].equals("--help")) {
+							result = "USAGE: rm [OPTION] ... [FILE] ... \n";
+							result += "[OPTION]\n";
+							result += "  -d\t     remove empty directory\n";
+							result += "  -r, -R   remove directory and their content\n\n";
+							result += "By default, rm does not remove directories.  Use the --recursive (-r or -R)\n"
+									+ "option to remove each listed directory, too, along with all of its contents.\n\n"
+									+ "To remove a file whose name starts with a '-', for example '-foo',\n"
+									+ "use one of these commands:\n" + "rm -- -foo\n" + "rm ./-foo\n";
 						}
-					} else if (command_arr[1].equals("-r") || command_arr[1].equals("-R")) {
-						if (subdir.contains(command_arr[2])) {
-							cmd[2] = "cd " + currentDir + "; rm " + command_arr[1] + " " + command_arr[2];
+					} else {
+						if (subdir.contains(command_arr[1])) {
+							cmd[2] = "cd " + currentDir + "; rm " + command_arr[1];
 							try {
 								process = runtime.exec(cmd);
 								int exitvalue = process.waitFor();
 								if (exitvalue == 0) {
 									result = "";
 								} else {
-									result = "rm: Can not remove " + "\'" + command_arr[2] + "\'\n";
+									bReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+									String line = "";
+									while ((line = bReader.readLine()) != null) {
+										result += line + "\n";
+									}
 								}
 							} catch (IOException e) {
 								e.printStackTrace();
 							} catch (InterruptedException e) {
 								e.printStackTrace();
 							}
-						} else {
-							result = "rm: " + command_arr[2] + ": Is not directory or file.\n";
 						}
 					}
 				} else {
-					result = "rm: Error syntax \n";
+					if (command_arr[1].startsWith("-")) {
+						if (command_arr[1].equals("-d")) {
+							if (subdir.contains(command_arr[2])) {
+								if ((new File(currentDir + "/" + command_arr[2]).isDirectory())) {
+									String realcurrentDir = currentDir.toString();
+									currentDir = currentDir + "/" + command_arr[2];
+									List<String> subdir1 = getSubdir();
+									currentDir = realcurrentDir;
+									if (subdir1.size() == 0) {
+										cmd[2] = "cd " + currentDir + "; rm -d " + command_arr[2];
+										try {
+											process = runtime.exec(cmd);
+											int exitvalue = process.waitFor();
+											if (exitvalue == 0) {
+												result = "";
+											} else {
+												result = "rm: Can not remove this directory.\n";
+											}
+										} catch (IOException e) {
+											e.printStackTrace();
+										} catch (InterruptedException e) {
+											e.printStackTrace();
+										}
+									} else {
+										result = "rm: This directory is not empty\n";
+										result += "Use \'-r\' or \'-R\' argument to remove non-empty directory.\n";
+									}
+								} else {
+									result = "rm: " + "\'" + command_arr[2] + "\': Is not directory\n";
+									result += "\'-d\' is optional argument for directory.\n";
+								}
+							} else {
+								result = "rm: " + command_arr[2] + ": Is not file or directory!\n";
+							}
+						} else if (command_arr[1].equals("-r") || command_arr[1].equals("-R")) {
+							if (subdir.contains(command_arr[2])) {
+								cmd[2] = "cd " + currentDir + "; rm " + command_arr[1] + " " + command_arr[2];
+								try {
+									process = runtime.exec(cmd);
+									int exitvalue = process.waitFor();
+									if (exitvalue == 0) {
+										result = "";
+									} else {
+										result = "rm: Can not remove " + "\'" + command_arr[2] + "\'\n";
+									}
+								} catch (IOException e) {
+									e.printStackTrace();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+							} else {
+								result = "rm: " + command_arr[2] + ": Is not directory or file.\n";
+							}
+						}
+					} else {
+						result = "rm: Error syntax \n";
+					}
 				}
 			}
 			return result;
